@@ -2,45 +2,41 @@ import 'package:d20_state_management/provider/province_provider.dart';
 import 'package:d20_state_management/widgets/province/province_item.dart';
 import 'package:d20_state_management/widgets/province/province_loader.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class ProvincePage extends StatefulWidget {
+class ProvincePage extends ConsumerStatefulWidget {
   const ProvincePage({super.key});
 
   @override
-  State<ProvincePage> createState() => _ProvincePageState();
+  ConsumerState<ProvincePage> createState() => _ProvincePageState();
 }
 
-class _ProvincePageState extends State<ProvincePage> {
+class _ProvincePageState extends ConsumerState<ProvincePage> {
   @override
   void initState() {
     super.initState();
-
+    // Using ref from ConsumerState to trigger fetch after widget is mounted
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ProvinceProvider>().getProvinces();
+      ref.read(provinceProvider.notifier).getProvinces();
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final state = ref.watch(provinceProvider);
+
     return Scaffold(
-      appBar: AppBar(title: Text("Indonesia's Provinces")),
-      body: Consumer<ProvinceProvider>(
-        builder: (context, provider, child) {
-          if (provider.isLoading) {
-            return ProvinceLoader();
-          }
-
-          if (provider.provinceList.isEmpty) {
-            return Center(child: Text("No provinces found"));
-          }
-
-          return ListView.builder(
-            itemCount: provider.provinceList.length,
-            itemBuilder: (context, index) =>
-                ProvinceItem(province: provider.provinceList[index]),
-          );
-        },
+      appBar: AppBar(title: const Text("Indonesia's Provinces")),
+      body: Center(
+        child: state.isLoading
+            ? const ProvinceLoader()
+            : state.provinces.isEmpty
+            ? const Center(child: Text("No provinces found"))
+            : ListView.builder(
+                itemCount: state.provinces.length,
+                itemBuilder: (context, index) =>
+                    ProvinceItem(province: state.provinces[index]),
+              ),
       ),
     );
   }
